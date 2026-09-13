@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pemesanan & WebGIS - CV. Kembar Joyo</title>
+    
+    <!-- Memanggil CSS Leaflet untuk Peta -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { 
+            font-family: 'Tahoma', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f4f4f9; 
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+        }
+        /* Mengatur ukuran dan tampilan kotak peta */
+        #map { 
+            height: 550px; 
+            width: 100%; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📍 Pemetaan Sentra Fotocopy & CV. Kembar Joyo</h1>
+    <div style="text-align: center; margin-bottom: 15px;">
+        <a href="/login" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Pesan Cetakan di CV. Kembar Joyo ➡</a>
+    </div>
+    
+    <!-- Tempat peta akan ditampilkan -->
+    <div id="map"></div>
+
+    <!-- Memanggil Javascript Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Membuat peta dan memusatkannya pada koordinat CV. Kembar Joyo (Sablon Story Screen)
+        // Angka 13 adalah tingkat zoom agar area pusat dan kampus bisa terlihat
+        var map = L.map('map').setView([-0.90139664, 119.88154346], 13);
+
+        // 2. Mengambil gambar peta dasar dari OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. Menerima data titik koordinat dari Python Flask (app.py)
+        var dataLokasi = {{ lokasi | tojson }};
+
+        // 4. Melakukan perulangan untuk menaruh pin (marker) di peta
+        dataLokasi.forEach(function(titik) {
+            var marker = L.marker([titik.latitude, titik.longitude]).addTo(map);
+            
+            // Membuat jendela informasi (pop-up) saat pin diklik
+            marker.bindPopup(
+                "<b>" + titik.nama_tempat + "</b><br>" +
+                "Layanan: " + titik.layanan + "<br>" +
+                "Jam Buka: " + titik.jam_buka
+            );
+        });
+    </script>
+
+</body>
+</html>

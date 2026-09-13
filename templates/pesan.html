@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemesanan Cetakan - CV. Kembar Joyo</title>
+    <style>
+        body { font-family: 'Tahoma', sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { background-color: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        select, input[type="number"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📝 Formulir Pemesanan Cetakan</h2>
+        <!-- Form ini disiapkan untuk mengirim file dan data ke server Python -->
+        <form action="/kalkulasi" method="POST" enctype="multipart/form-data">
+            
+            <label>Unggah Dokumen (PDF/Word):</label>
+            <input type="file" name="dokumen" required>
+            
+            <label>Ukuran Kertas:</label>
+            <select name="kertas">
+                <option value="A4">A4</option>
+                <option value="A3">A3</option>
+                <option value="F4">F4 / Legal</option>
+            </select>
+            
+            <label>Jenis Warna:</label>
+            <select name="warna">
+                <option value="Hitam Putih">Hitam Putih</option>
+                <option value="Berwarna">Full Color</option>
+            </select>
+            
+            <label>Jenis Jilid:</label>
+            <select name="jilid">
+                <option value="Tanpa Jilid">Tanpa Jilid</option>
+                <option value="Lakban">Jilid Lakban</option>
+                <option value="Spiral">Jilid Spiral</option>
+            </select>
+            
+            <label>Jumlah Rangkap:</label>
+            <input type="number" name="jumlah" value="1" min="1" required>
+            
+            <button type="submit">Hitung Total Harga ➡</button>
+        </form>
+    </div>
+
+</body>
+</html>
