@@ -9,7 +9,7 @@
         .container { background-color: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; }
         label { font-weight: bold; margin-top: 10px; display: block; }
-        select, input[type="number"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        select, input[type="number"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
         button:hover { background-color: #0056b3; }
     </style>
@@ -18,7 +18,6 @@
 
     <div class="container">
         <h2>📝 Formulir Pemesanan Cetakan</h2>
-        <!-- Form ini disiapkan untuk mengirim file dan data ke server Python -->
         <form action="/kalkulasi" method="POST" enctype="multipart/form-data">
             
             <label>Unggah Dokumen (PDF/Word):</label>
@@ -46,6 +45,12 @@
             
             <label>Jumlah Rangkap:</label>
             <input type="number" name="jumlah" value="1" min="1" required>
+
+            <label>Metode Penerimaan:</label>
+            <select name="penerimaan">
+                <option value="Ambil Sendiri di Toko">Ambil Sendiri di Toko</option>
+                <option value="Diantar ke Alamat">Diantar ke Alamat (Area Palu)</option>
+            </select>
             
             <button type="submit">Hitung Total Harga ➡</button>
         </form>
