@@ -1,18 +1,17 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from db_config import get_db_connection
 
 app = Flask(__name__)
+# Kunci rahasia ini sekarang sangat berguna untuk mengamankan Session!
 app.secret_key = 'kunci_rahasia_kembar_joyo' 
 
-# Konfigurasi Folder untuk menyimpan file fisik
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Otomatis membuat folder jika belum ada
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# 1. Route untuk Halaman Peta
 @app.route('/')
 def index():
     try:
@@ -24,9 +23,8 @@ def index():
         conn.close()
         return render_template('index.html', lokasi=data_lokasi)
     except Exception as e:
-        return f"<h1>Koneksi atau Pengambilan Data Gagal. Error: {e}</h1>"
+        return f"<h1>Koneksi gagal: {e}</h1>"
 
-# 2. Route untuk Fitur Registrasi
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -49,7 +47,6 @@ def register():
             conn.close()
     return render_template('register.html')
 
-# 3. Route untuk Fitur Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -64,7 +61,10 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password'], sandi_input):
-            # Memunculkan Pop-Up sukses ala Windows XP
+            # 1. BUAT SESSION: Simpan ID pelanggan ke dalam memori browser
+            session['user_id'] = user['id_pelanggan']
+            session['nama_lengkap'] = user['nama_lengkap']
+            
             return f"""
             <!DOCTYPE html>
             <html lang="id">
@@ -90,27 +90,37 @@ def login():
             """
         else:
             return "<script>alert('Gagal! Nomor HP atau Kata Sandi salah.'); window.history.back();</script>"
+            
     return render_template('login.html')
 
-# 4. Route untuk Halaman Formulir Pemesanan
+# ROUTE BARU: Untuk Logout (Menghapus Session)
+@app.route('/logout')
+def logout():
+    session.clear() # Hapus semua ingatan login
+    return redirect(url_for('login'))
+
 @app.route('/pesan')
 def pesan():
+    # 2. CEK SESSION: Jika belum login, tendang ke halaman login!
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
     return render_template('pesan.html')
 
-# 5. Route untuk Logika Kalkulasi Harga & Simpan Dokumen Sementara
 @app.route('/kalkulasi', methods=['POST'])
 def kalkulasi():
+    # CEK SESSION JUGA DI SINI
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
     if request.method == 'POST':
         kertas = request.form['kertas']
         warna = request.form['warna']
         jilid = request.form['jilid']
         jumlah = int(request.form['jumlah'])
         penerimaan = request.form['penerimaan']
-        
-        # Menangkap input catatan dari pelanggan
         catatan = request.form.get('catatan', '') 
         
-        # PROSES PENYIMPANAN FISIK FILE DOKUMEN
         dokumen = request.files.get('dokumen')
         if dokumen and dokumen.filename != '':
             nama_file = secure_filename(dokumen.filename)
@@ -118,23 +128,19 @@ def kalkulasi():
         else:
             nama_file = "Tidak ada file"
 
-        # Tarif Dasar
         harga_kertas = 200 if kertas == 'A4' else (300 if kertas == 'F4' else 500)
         harga_warna = 300 if warna == 'Hitam Putih' else 1000
         harga_jilid = 0 if jilid == 'Tanpa Jilid' else (3000 if jilid == 'Lakban' else 15000)
         ongkir = 5000 if penerimaan == 'Diantar ke Alamat' else 0
 
-        # Rumus Kalkulasi
         harga_satuan = harga_kertas + harga_warna
         subtotal_cetak = harga_satuan * jumlah
         total_harga = subtotal_cetak + harga_jilid + ongkir
         
-        # Menggabungkan spesifikasi utama dengan catatan (jika ada)
         spesifikasi_lengkap = f"Kertas {kertas}, {warna}, Jilid {jilid} ({jumlah} Rangkap)"
         if catatan.strip() != "":
             spesifikasi_lengkap += f" | Catatan: {catatan}"
 
-        # Halaman Checkout
         return f"""
         <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;">
             <h2 style="color: #333; text-align: center;">Rincian Pesanan & Pembayaran</h2>
@@ -167,16 +173,18 @@ def kalkulasi():
         </div>
         """
 
-# 6. Route untuk Simpan Bukti Bayar & Database
 @app.route('/simpan_pesanan', methods=['POST'])
 def simpan_pesanan():
+    # CEK SESSION JUGA
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
     if request.method == 'POST':
         nama_file = request.form['nama_file']
         spesifikasi = request.form['spesifikasi']
         penerimaan = request.form['penerimaan']
         total_harga = request.form['total_harga']
         
-        # PROSES PENYIMPANAN FISIK GAMBAR BUKTI TRANSFER
         bukti_bayar = request.files.get('bukti_bayar')
         if bukti_bayar and bukti_bayar.filename != '':
             nama_bukti = secure_filename(bukti_bayar.filename)
@@ -184,7 +192,8 @@ def simpan_pesanan():
         else:
             nama_bukti = "Tidak ada bukti"
         
-        id_pelanggan = 1 
+        # 3. AMBIL ID DARI SESSION!
+        id_pelanggan = session['user_id'] 
         status = "Menunggu Diproses"
         
         try:
@@ -201,7 +210,7 @@ def simpan_pesanan():
             return f"""
             <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #ccc; border-radius: 10px; background-color: #d4edda;">
                 <h1 style="color: #155724;">✅ Pesanan Berhasil Dibuat!</h1>
-                <p style="color: #155724; font-size: 16px;">Terima kasih. Pesanan dokumen <b>{nama_file}</b> Anda telah masuk ke sistem dan sedang menunggu konfirmasi admin.</p>
+                <p style="color: #155724; font-size: 16px;">Terima kasih <b>{session['nama_lengkap']}</b>. Pesanan Anda telah masuk ke sistem.</p>
                 <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">⬅ Kembali ke Halaman Utama</a>
             </div>
             """
@@ -211,9 +220,36 @@ def simpan_pesanan():
             if 'cursor' in locals(): cursor.close()
             if 'conn' in locals(): conn.close()
 
-# 7. Route Dashboard Admin (Tema Windows XP)
+# ==========================================
+# AREA KHUSUS ADMIN (DILINDUNGI SESSION)
+# ==========================================
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # Cek kredensial statis sesuai permintaanmu
+        if username == 'admin' and password == '1234':
+            session['admin_logged_in'] = True # Beri "Kartu Akses" Admin
+            return redirect(url_for('admin'))
+        else:
+            return "<script>alert('Akses Ditolak! Username atau Password Admin salah.'); window.history.back();</script>"
+            
+    return render_template('admin_login.html')
+
+@app.route('/admin_logout')
+def admin_logout():
+    session.pop('admin_logged_in', None) # Tarik kembali "Kartu Akses" Admin
+    return redirect(url_for('admin_login'))
+
 @app.route('/admin')
 def admin():
+    # KUNCI KEAMANAN: Jika tidak ada kartu akses admin, tendang ke login admin!
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -226,9 +262,12 @@ def admin():
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
-# 8. Route Update Status Pesanan
 @app.route('/update_status/<int:id_pesanan>', methods=['POST'])
 def update_status(id_pesanan):
+    # KUNCI KEAMANAN: Aksi mengubah status juga harus dilindungi
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
     status_baru = request.form['status_baru']
     try:
         conn = get_db_connection()

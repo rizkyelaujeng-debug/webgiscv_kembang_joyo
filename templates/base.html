@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="https://unpkg.com/xp.css">
     <style>
         body {
-            /* Warna latar biru klasik XP sebagai cadangan jika gambar gagal dimuat */
-            background-color: #004e98;
-            /* Tautan wallpaper alternatif yang lebih stabil */
-            background-image: url('https://archive.org/download/bliss-600dpi/bliss-600dpi.jpg');
+            /* Warna latar biru langit sebagai cadangan */
+            background-color: #3a6ea5;
+            /* Memanggil wallpaper Bliss langsung dari folder static lokal proyek */
+            background-image: url("{{ url_for('static', filename='bliss.jpg') }}");
             background-size: cover;
             background-attachment: fixed;
             font-family: Tahoma, sans-serif;
@@ -103,6 +103,7 @@
         <a href="/login" class="nav-item">🔑 Login</a>
         <a href="/pesan" class="nav-item">🖨️ Pesan Cetakan</a>
         <a href="/admin" class="nav-item" style="background-color: #d97706; border-color: #92400e;">⚙️ Admin</a>
+        <a href="/logout" class="nav-item" style="background-color: #dc2626; border-color: #991b1b;">🚪 Logout</a>
     </div>
 </div>
 
