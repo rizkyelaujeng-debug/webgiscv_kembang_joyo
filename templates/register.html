@@ -1,32 +1,36 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrasi - CV. Kembar Joyo</title>
-    <style>
-        body { font-family: 'Tahoma', sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        .nav-back { display: block; margin-top: 20px; font-size: 14px; color: #555; text-decoration: none; }
-    </style>
-</head>
-<body>
+={% extends 'base.html' %}
+{% block title %}Pendaftaran - Kembar Joyo{% endblock %}
 
-    <div class="container">
-        <h2>Daftar Akun Baru</h2>
-        <!-- Form ini akan mengirim data ke jalur /register di Python -->
-        <form action="/register" method="POST">
-            <input type="text" name="nama_lengkap" placeholder="Nama Lengkap" required>
-            <input type="text" name="no_hp" placeholder="Nomor HP (Contoh: 0812...)" required>
-            <input type="password" name="password" placeholder="Kata Sandi" required>
-            <button type="submit">Daftar Sekarang</button>
-        </form>
-        
-        <a href="/login" class="nav-back">⬅ Kembali ke halaman Login</a>
+{% block content %}
+<div class="window" style="width: 400px; margin: 0 auto;">
+    <div class="title-bar">
+        <div class="title-bar-text"><span style="margin-right: 5px;">📝</span> Pendaftaran Pelanggan Baru</div>
+        <div class="title-bar-controls">
+            <button aria-label="Close"></button>
+        </div>
     </div>
-
-</body>
-</html>
+    <div class="window-body">
+        <p>Silakan isi data diri Anda untuk membuat akun baru.</p>
+        <form action="/register" method="POST">
+            <fieldset style="margin-bottom: 15px;">
+                <legend>Data Diri</legend>
+                <div class="field-row" style="margin-bottom: 10px;">
+                    <label style="width: 100px;">Nama Lengkap:</label>
+                    <input type="text" name="nama_lengkap" required style="width: 220px;">
+                </div>
+                <div class="field-row" style="margin-bottom: 10px;">
+                    <label style="width: 100px;">Nomor HP:</label>
+                    <input type="text" name="no_hp" required style="width: 220px;">
+                </div>
+                <div class="field-row">
+                    <label style="width: 100px;">Kata Sandi:</label>
+                    <input type="password" name="password" required style="width: 220px;">
+                </div>
+            </fieldset>
+            <div style="text-align: right; border-top: 1px solid #ccc; padding-top: 10px;">
+                <button type="submit" style="width: 100px; font-weight: bold;">Daftar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

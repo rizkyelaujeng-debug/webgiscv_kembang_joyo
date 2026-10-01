@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - CV. Kembar Joyo</title>
+    <!-- Library XP.css untuk menyulap web menjadi Windows XP -->
+    <link rel="stylesheet" href="https://unpkg.com/xp.css">
+    <style>
+        body {
+            /* Wallpaper legendaris Windows XP (Bliss) */
+            background-image: url('https://upload.wikimedia.org/wikipedia/en/1/17/Bliss_%28Windows_XP%29.png');
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: Tahoma, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        .admin-container {
+            width: 100%;
+            max-width: 900px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            font-family: Tahoma, sans-serif;
+        }
+        th, td {
+            border: 1px solid #c0c0c0;
+            padding: 6px;
+            font-size: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #ece9d8; /* Warna khas header XP */
+            font-weight: normal;
+            border-bottom: 2px solid #999;
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <!-- Jendela ala Windows XP -->
+    <div class="window">
+        <!-- Title Bar Biru Khas XP -->
+        <div class="title-bar">
+            <div class="title-bar-text">
+                <img src="https://win98icons.alexmeub.com/icons/png/computer_explorer-4.png" alt="icon" style="height: 16px; vertical-align: middle; margin-right: 5px;">
+                Control Panel Admin - CV. Kembar Joyo
+            </div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
+        </div>
+        
+        <!-- Isi Jendela -->
+        <div class="window-body">
+            <menu role="tablist">
+                <li role="tab" aria-selected="true"><a href="#tabs">Pesanan Masuk</a></li>
+                <li role="tab"><a href="/">⬅ Kembali ke Web Utama</a></li>
+            </menu>
+            
+            <article role="tabpanel" id="tabs">
+                <p>Selamat datang, Administrator. Berikut adalah daftar pesanan dokumen dari pelanggan:</p>
+                
+                <!-- Kotak Tabel bergaya "Sunken" (Tenggelam ke dalam) -->
+                <div class="sunken-panel" style="height: 350px; overflow-y: scroll;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tanggal</th>
+                                <th>Nama File</th>
+                                <th>Spesifikasi & Pengiriman</th>
+                                <th>Total Biaya</th>
+                                <th>Status</th>
+                                <th>Aksi Ubah Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pesanan %}
+                            <tr>
+                                <td>#{{ p.id_pesanan }}</td>
+                                <td>{{ p.tanggal_pesan }}</td>
+                                <td>
+                                    <!-- Link untuk melihat/mengunduh dokumen -->
+                                    <a href="{{ url_for('static', filename='uploads/' + p.nama_file) }}" target="_blank" style="color: blue; text-decoration: underline;">
+                                        <strong>📂 {{ p.nama_file }}</strong>
+                                    </a>
+                                    <br>
+                                    <!-- Link untuk melihat bukti transfer -->
+                                    <a href="{{ url_for('static', filename='uploads/' + p.bukti_bayar) }}" target="_blank" style="font-size: 10px; color: green; text-decoration: none;">
+                                        Lihat Bukti Bayar 💸
+                                    </a>
+                                </td>
+                                <td>{{ p.spesifikasi }} <br> <span style="color: blue;">[{{ p.metode_penerimaan }}]</span></td>
+                                <td>Rp {{ "{:,}".format(p.total_harga) }}</td>
+                                
+                                <!-- Warna Status Dinamis -->
+                                <td style="font-weight: bold; color: {% if p.status_pesanan == 'Menunggu Diproses' %}red{% elif p.status_pesanan == 'Selesai' %}green{% else %}#b8860b{% endif %};">
+                                    {{ p.status_pesanan }}
+                                </td>
+                                
+                                <td>
+                                    <form action="/update_status/{{ p.id_pesanan }}" method="POST" style="margin: 0; display: flex; gap: 5px;">
+                                        <select name="status_baru" style="font-family: Tahoma; font-size: 11px;">
+                                            <option value="Menunggu Diproses" {% if p.status_pesanan == 'Menunggu Diproses' %}selected{% endif %}>Menunggu</option>
+                                            <option value="Sedang Dicetak" {% if p.status_pesanan == 'Sedang Dicetak' %}selected{% endif %}>Dicetak</option>
+                                            <option value="Sedang Diantar" {% if p.status_pesanan == 'Sedang Diantar' %}selected{% endif %}>Diantar</option>
+                                            <option value="Selesai" {% if p.status_pesanan == 'Selesai' %}selected{% endif %}>Selesai</option>
+                                        </select>
+                                        <button type="submit" style="font-size: 11px; padding: 2px 5px;">Update</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px;">Kosong. Belum ada pesanan yang masuk ke sistem.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

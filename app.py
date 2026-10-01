@@ -1,12 +1,18 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from db_config import get_db_connection
 
 app = Flask(__name__)
-# Kunci rahasia ini dibutuhkan agar kita bisa membuat sesi (session) login ke depannya
 app.secret_key = 'kunci_rahasia_kembar_joyo' 
 
-# 1. Route untuk Halaman Peta (Tetap sama)
+# Konfigurasi Folder untuk menyimpan file fisik
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Otomatis membuat folder jika belum ada
+
+# 1. Route untuk Halaman Peta
 @app.route('/')
 def index():
     try:
@@ -20,36 +26,30 @@ def index():
     except Exception as e:
         return f"<h1>Koneksi atau Pengambilan Data Gagal. Error: {e}</h1>"
 
-# 2. Route untuk Fitur Registrasi (Baru)
+# 2. Route untuk Fitur Registrasi
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # Jika tombol "Daftar" ditekan
     if request.method == 'POST':
         nama = request.form['nama_lengkap']
         nohp = request.form['no_hp']
         sandi = request.form['password']
-        
-        # Enkripsi password sesuai spesifikasi tugas RPL
         sandi_enkripsi = generate_password_hash(sandi)
         
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
-            # Simpan ke tabel pelanggan
             cursor.execute("INSERT INTO pelanggan (nama_lengkap, no_hp, password) VALUES (%s, %s, %s)", 
                            (nama, nohp, sandi_enkripsi))
             conn.commit()
-            return redirect(url_for('login')) # Setelah sukses, arahkan langsung ke halaman login
+            return redirect(url_for('login'))
         except Exception as e:
             return f"Terjadi kesalahan database: {e}"
         finally:
             cursor.close()
             conn.close()
-            
-    # Jika hanya membuka halamannya saja
     return render_template('register.html')
 
-# 3. Route untuk Fitur Login (Diperbarui)
+# 3. Route untuk Fitur Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -63,20 +63,41 @@ def login():
         cursor.close()
         conn.close()
         
-        # Cek apakah nomor HP ada dan password input cocok dengan password di database
         if user and check_password_hash(user['password'], sandi_input):
-            return f"<h1>Login Berhasil! Selamat datang, {user['nama_lengkap']}! 🎉</h1>"
+            # Memunculkan Pop-Up sukses ala Windows XP
+            return f"""
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <link rel="stylesheet" href="https://unpkg.com/xp.css">
+                <style>body {{ background-color: #004e98; background-image: url('https://archive.org/download/bliss-600dpi/bliss-600dpi.jpg'); background-size: cover; font-family: Tahoma; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}</style>
+            </head>
+            <body>
+                <div class="window" style="width: 320px;">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Informasi Sistem</div>
+                        <div class="title-bar-controls"><button aria-label="Close"></button></div>
+                    </div>
+                    <div class="window-body" style="text-align: center; padding: 15px;">
+                        <span style="font-size: 32px; display: block; margin-bottom: 10px;">🎉</span>
+                        <p>Login Berhasil!<br>Selamat datang, <b>{user['nama_lengkap']}</b>.</p>
+                        <br>
+                        <a href="/pesan"><button style="width: 80px;">OK</button></a>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
         else:
-            return "<h1>Gagal! Nomor HP atau Kata Sandi salah. Silakan kembali.</h1>"
-            
+            return "<script>alert('Gagal! Nomor HP atau Kata Sandi salah.'); window.history.back();</script>"
     return render_template('login.html')
 
-# 4. Route untuk Halaman Formulir Pemesanan (DFD 3.1)
+# 4. Route untuk Halaman Formulir Pemesanan
 @app.route('/pesan')
 def pesan():
     return render_template('pesan.html')
 
-# 5. Route untuk Logika Kalkulasi Harga (DFD 3.2)
+# 5. Route untuk Logika Kalkulasi Harga & Simpan Dokumen Sementara
 @app.route('/kalkulasi', methods=['POST'])
 def kalkulasi():
     if request.method == 'POST':
@@ -86,21 +107,21 @@ def kalkulasi():
         jumlah = int(request.form['jumlah'])
         penerimaan = request.form['penerimaan']
         
-        dokumen = request.files['dokumen']
-        nama_file = dokumen.filename if dokumen else "Tidak ada file"
+        # Menangkap input catatan dari pelanggan
+        catatan = request.form.get('catatan', '') 
+        
+        # PROSES PENYIMPANAN FISIK FILE DOKUMEN
+        dokumen = request.files.get('dokumen')
+        if dokumen and dokumen.filename != '':
+            nama_file = secure_filename(dokumen.filename)
+            dokumen.save(os.path.join(app.config['UPLOAD_FOLDER'], nama_file))
+        else:
+            nama_file = "Tidak ada file"
 
         # Tarif Dasar
         harga_kertas = 200 if kertas == 'A4' else (300 if kertas == 'F4' else 500)
         harga_warna = 300 if warna == 'Hitam Putih' else 1000
-        
-        if jilid == 'Tanpa Jilid':
-            harga_jilid = 0
-        elif jilid == 'Lakban':
-            harga_jilid = 3000
-        else:
-            harga_jilid = 15000
-
-        # Ongkos kirim jika pilih diantar
+        harga_jilid = 0 if jilid == 'Tanpa Jilid' else (3000 if jilid == 'Lakban' else 15000)
         ongkir = 5000 if penerimaan == 'Diantar ke Alamat' else 0
 
         # Rumus Kalkulasi
@@ -108,10 +129,12 @@ def kalkulasi():
         subtotal_cetak = harga_satuan * jumlah
         total_harga = subtotal_cetak + harga_jilid + ongkir
         
-        # Gabungkan spesifikasi untuk disimpan ke database
+        # Menggabungkan spesifikasi utama dengan catatan (jika ada)
         spesifikasi_lengkap = f"Kertas {kertas}, {warna}, Jilid {jilid} ({jumlah} Rangkap)"
+        if catatan.strip() != "":
+            spesifikasi_lengkap += f" | Catatan: {catatan}"
 
-        # Halaman Checkout dengan QRIS
+        # Halaman Checkout
         return f"""
         <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;">
             <h2 style="color: #333; text-align: center;">Rincian Pesanan & Pembayaran</h2>
@@ -128,7 +151,6 @@ def kalkulasi():
             </div>
 
             <form action="/simpan_pesanan" method="POST" enctype="multipart/form-data">
-                <!-- Input tersembunyi (hidden) untuk mengirim data rincian ke route simpan_pesanan -->
                 <input type="hidden" name="nama_file" value="{nama_file}">
                 <input type="hidden" name="spesifikasi" value="{spesifikasi_lengkap}">
                 <input type="hidden" name="penerimaan" value="{penerimaan}">
@@ -145,7 +167,7 @@ def kalkulasi():
         </div>
         """
 
-# 6. Route untuk Menyimpan Pesanan (DFD 3.3)
+# 6. Route untuk Simpan Bukti Bayar & Database
 @app.route('/simpan_pesanan', methods=['POST'])
 def simpan_pesanan():
     if request.method == 'POST':
@@ -154,11 +176,14 @@ def simpan_pesanan():
         penerimaan = request.form['penerimaan']
         total_harga = request.form['total_harga']
         
-        # Menangkap file bukti transfer
-        bukti_bayar = request.files['bukti_bayar']
-        nama_bukti = bukti_bayar.filename if bukti_bayar else "Tidak ada bukti"
+        # PROSES PENYIMPANAN FISIK GAMBAR BUKTI TRANSFER
+        bukti_bayar = request.files.get('bukti_bayar')
+        if bukti_bayar and bukti_bayar.filename != '':
+            nama_bukti = secure_filename(bukti_bayar.filename)
+            bukti_bayar.save(os.path.join(app.config['UPLOAD_FOLDER'], nama_bukti))
+        else:
+            nama_bukti = "Tidak ada bukti"
         
-        # Simulasi ID Pelanggan = 1 (Karena kita belum menyambungkan session login)
         id_pelanggan = 1 
         status = "Menunggu Diproses"
         
@@ -166,7 +191,6 @@ def simpan_pesanan():
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Memasukkan seluruh data ke dalam database MySQL (Tabel: pesanan)
             query = """
             INSERT INTO pesanan (id_pelanggan, nama_file, spesifikasi, metode_penerimaan, bukti_bayar, total_harga, status_pesanan, tanggal_pesan) 
             VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
@@ -174,7 +198,6 @@ def simpan_pesanan():
             cursor.execute(query, (id_pelanggan, nama_file, spesifikasi, penerimaan, nama_bukti, total_harga, status))
             conn.commit()
             
-            # Tampilkan pesan sukses
             return f"""
             <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #ccc; border-radius: 10px; background-color: #d4edda;">
                 <h1 style="color: #155724;">✅ Pesanan Berhasil Dibuat!</h1>
@@ -187,6 +210,37 @@ def simpan_pesanan():
         finally:
             if 'cursor' in locals(): cursor.close()
             if 'conn' in locals(): conn.close()
+
+# 7. Route Dashboard Admin (Tema Windows XP)
+@app.route('/admin')
+def admin():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pesanan ORDER BY id_pesanan DESC")
+        data_pesanan = cursor.fetchall()
+        return render_template('admin.html', pesanan=data_pesanan)
+    except Exception as e:
+        return f"Error: {e}"
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+# 8. Route Update Status Pesanan
+@app.route('/update_status/<int:id_pesanan>', methods=['POST'])
+def update_status(id_pesanan):
+    status_baru = request.form['status_baru']
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE pesanan SET status_pesanan = %s WHERE id_pesanan = %s", (status_baru, id_pesanan))
+        conn.commit()
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"Gagal update status: {e}"
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
