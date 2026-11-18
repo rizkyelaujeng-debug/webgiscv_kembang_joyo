@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}Rincian Pembayaran - Kembar Joyo{% endblock %}
+
+{% block content %}
+<style>
+.link-btn {
+        display: inline-block;
+        padding: 6px 14px;
+        background-color: #0d6efd;
+        color: #ffffff !important;
+        text-decoration: none;
+        font-family: Tahoma, sans-serif;
+        font-size: 13px;
+        font-weight: bold;
+        border: 2px outset #084298;
+        cursor: pointer;
+    }
+    .link-btn:hover {
+        background-color: #0b5ed7;
+    }
+    .link-btn-maxim {
+        background-color: #fd7e14;
+        border-color: #c35a00;
+    }
+    .link-btn-maxim:hover {
+        background-color: #e06000;
+    }
+    #link-selesai {
+        display: inline-block;
+        min-width: 150px;
+        background-color: #28a745;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border: 2px outset #155724;
+        font-weight: bold;
+        font-family: Tahoma, sans-serif;
+        font-size: 13px;
+        cursor: pointer;
+        padding: 5px 14px;
+        text-decoration: none;
+        text-align: center;
+    }
+    #link-selesai:hover {
+        background-color: #218838;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        text-decoration: none;
+    }
+</style>
+
+<div class="window" style="width: 100%; max-width: 500px; margin: 0 auto;">
+    <div class="title-bar">
+        <div class="title-bar-text">
+            <span style="margin-right: 5px;">🧾</span> Rincian Pesanan &amp; Pembayaran
+        </div>
+        <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="window-body">
+
+        <!-- Detail Pesanan -->
+        <fieldset style="margin-bottom: 12px;">
+            <legend>📄 Detail Dokumen</legend>
+            <div class="field-row" style="margin-bottom: 6px;">
+                <label style="width: 110px; font-weight: bold;">Nama File:</label>
+                <span>{{ nama_file }}</span>
+            </div>
+            <div class="field-row" style="margin-bottom: 6px;">
+                <label style="width: 110px; font-weight: bold;">Spesifikasi:</label>
+                <span>{{ spesifikasi }}</span>
+            </div>
+            <div class="field-row" style="margin-bottom: 6px;">
+                <label style="width: 110px; font-weight: bold;">Penerimaan:</label>
+                <span>{{ penerimaan }}</span>
+            </div>
+            {% if alamat_tujuan %}
+            <div class="field-row" style="margin-bottom: 6px;">
+                <label style="width: 110px; font-weight: bold;">📍 Alamat:</label>
+                <span>{{ alamat_tujuan }}</span>
+            </div>
+            {% endif %}
+            <hr style="border: 0; border-top: 1px dashed #bbb; margin: 8px 0;">
+            <div class="field-row" style="margin-bottom: 4px; font-size: 12px;">
+                <label style="width: 110px; font-weight: bold;">Biaya Cetak:</label>
+                <span>{{ jumlah_halaman }} hal × Rp {{ "{:,}".format(harga_per_halaman) }} × {{ jumlah_rangkap }} rangkap = <b>Rp {{ "{:,}".format(subtotal_cetak) }}</b></span>
+            </div>
+            {% if total_jilid and total_jilid > 0 %}
+            <div class="field-row" style="margin-bottom: 4px; font-size: 12px;">
+                <label style="width: 110px; font-weight: bold;">Biaya Jilid:</label>
+                <span>Rp {{ "{:,}".format(total_jilid) }}</span>
+            </div>
+            {% endif %}
+            {% if ongkir and ongkir > 0 %}
+            <div class="field-row" style="font-size: 12px;">
+                <label style="width: 110px; font-weight: bold;">Biaya Ongkir:</label>
+                <span>Rp {{ "{:,}".format(ongkir) }}</span>
+            </div>
+            {% endif %}
+        </fieldset>
+
+        <!-- Total Harga -->
+        <div class="window" style="margin-bottom: 12px;">
+            <div class="title-bar" style="background: linear-gradient(to right, #155724, #28a745);">
+                <div class="title-bar-text">💰 Total Pembayaran</div>
+            </div>
+            <div class="window-body" style="text-align: center; padding: 10px;">
+                <p style="font-size: 20px; font-weight: bold; color: #155724; margin: 0;">
+                    Rp {{ "{:,}".format(total_harga) }}
+                </p>
+            </div>
+        </div>
+
+        <!-- QRIS -->
+        <fieldset style="margin-bottom: 12px;">
+            <legend>📱 Pembayaran via QRIS</legend>
+            <div style="text-align: center; padding: 10px;">
+                <p style="color: #d9534f; font-weight: bold; margin-bottom: 10px;">⚠️ Wajib Bayar via QRIS</p>
+                <img src="{{ url_for('static', filename='qris_kembar_joyo.jpg') }}"
+                     alt="QRIS CV Kembar Joyo"
+                     style="width: 220px; display: block; margin: 0 auto 10px auto; border: 2px solid #ccc; padding: 5px; background: white;">
+                <p style="font-size: 12px; color: #555; margin: 0;">
+                    Silakan <em>scan</em> menggunakan M-Banking atau E-Wallet<br>
+                    sebesar <strong>Rp {{ "{:,}".format(total_harga) }}</strong>
+                </p>
+            </div>
+        </fieldset>
+
+        <!-- Upload Bukti -->
+        <form id="form-pesanan" action="/simpan_pesanan" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="nama_file"   value="{{ nama_file }}">
+            <input type="hidden" name="spesifikasi" value="{{ spesifikasi }}">
+            <input type="hidden" name="penerimaan"  value="{{ penerimaan }}">
+            <input type="hidden" name="total_harga" value="{{ total_harga }}">
+            <input type="hidden" name="alamat_tujuan" value="{{ alamat_tujuan or '' }}">
+
+            <fieldset style="margin-bottom: 12px;">
+                <legend>🖼️ Bukti Transfer</legend>
+                <div class="field-row" style="padding: 8px 0;">
+                    <label style="width: 130px; display: inline-block;">Upload (JPG/PNG):</label>
+                    <input type="file" name="bukti_bayar" accept="image/png, image/jpeg" required>
+                </div>
+            </fieldset>
+
+            <div style="border-top: 1px solid #ccc; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <a href="/pesan" style="font-size: 12px; color: #000080; text-decoration: underline;">
+                    ⬅ Batal / Edit Pesanan
+                </a>
+                <a href="#" id="link-selesai" onclick="document.getElementById('form-pesanan').submit(); return false;">
+                    Selesaikan Pesanan &#10145;
+                </a>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

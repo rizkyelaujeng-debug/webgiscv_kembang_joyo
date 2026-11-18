@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Login Berhasil - Kembar Joyo{% endblock %}
+
+{% block content %}
+<div class="window" style="max-width: 320px; width: 100%; margin: 0 auto;">
+    <div class="title-bar">
+        <div class="title-bar-text">Informasi Sistem</div>
+        <div class="title-bar-controls">
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="window-body" style="text-align: center; padding: 20px;">
+        <span style="font-size: 48px; display: block; margin-bottom: 10px;">🎉</span>
+        <p style="margin: 0 0 5px 0; font-weight: bold;">Login Berhasil!</p>
+        <p style="margin: 0 0 20px 0;">Selamat datang, <b>{{ nama }}</b>.</p>
+        <div style="border-top: 1px solid #ccc; padding-top: 15px; display: flex; justify-content: center; gap: 10px;">
+            <a href="/"><button style="min-width: 80px;">🌍 Peta</button></a>
+            <a href="/pesan"><button style="min-width: 80px; font-weight: bold;">🖨️ Pesan</button></a>
+        </div>
+    </div>
+</div>
+{% endblock %}

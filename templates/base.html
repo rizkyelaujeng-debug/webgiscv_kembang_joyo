@@ -2,43 +2,44 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CV. Kembar Joyo{% endblock %}</title>
     <!-- CSS Tema Windows XP -->
     <link rel="stylesheet" href="https://unpkg.com/xp.css">
     <style>
         body {
-            /* Warna latar biru langit sebagai cadangan */
             background-color: #3a6ea5;
-            /* Memanggil wallpaper Bliss langsung dari folder static lokal proyek */
             background-image: url("{{ url_for('static', filename='bliss.jpg') }}");
             background-size: cover;
             background-attachment: fixed;
             font-family: Tahoma, sans-serif;
             margin: 0;
-            padding: 20px;
-            padding-bottom: 60px; /* Ruang untuk taskbar di bawah */
+            padding: 60px 15px 70px 15px; /* atas: ruang napas, bawah: taskbar */
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 90vh;
+            align-items: center;         /* tengah vertikal */
+            min-height: 100vh;
+            box-sizing: border-box;
         }
         .container {
             width: 100%;
-            max-width: 600px; /* Ukuran standar jendela */
+            max-width: 680px;
         }
-        
-        /* Desain Taskbar Windows XP buatan sendiri */
+
+        /* ========== TASKBAR ========== */
         .taskbar {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 40px;
+            min-height: 40px;
             background: linear-gradient(to bottom, #245edb 0%, #3f8cf3 9%, #245edb 18%, #245edb 92%, #333 100%);
             display: flex;
             align-items: center;
             z-index: 1000;
             border-top: 1px solid #000;
+            flex-wrap: wrap;
+            box-sizing: border-box;
         }
         .start-btn {
             background: linear-gradient(to bottom, #3b8214 0%, #469e16 10%, #3b8214 20%, #3b8214 100%);
@@ -47,42 +48,105 @@
             font-weight: bold;
             font-style: italic;
             font-size: 18px;
-            height: 100%;
-            padding: 0 25px;
+            height: 40px;
+            padding: 0 20px;
             display: flex;
             align-items: center;
             border-right: 1px solid #1a3a08;
             border-radius: 0 15px 15px 0;
             cursor: pointer;
             box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+            flex-shrink: 0;
         }
-        .start-btn:active {
-            background: #2d6b0e;
-        }
+        .start-btn:active { background: #2d6b0e; }
         .nav-links {
             display: flex;
-            gap: 5px;
-            margin-left: 15px;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-left: 10px;
+            padding: 4px 0;
+            flex: 1;
         }
         .nav-item {
             background-color: #3b82f6;
-            color: white;
-            padding: 7px 15px;
+            color: white !important;
+            padding: 5px 10px;
             border-radius: 3px;
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12px;
             border: 1px solid #1e3a8a;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            white-space: nowrap;
         }
-        .nav-item:hover {
-            background-color: #2563eb;
+        .nav-item:hover { background-color: #2563eb; }
+        .nav-item:active { background-color: #1d4ed8; }
+
+        /* ========== WINDOW RESPONSIVE ========== */
+        .window {
+            max-width: 100% !important;
+            box-sizing: border-box;
         }
-        .nav-item:active {
-            background-color: #1d4ed8;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+
+        /* ========== FIELD-ROW RESPONSIVE ========== */
+        @media (max-width: 520px) {
+            body {
+                padding: 10px 8px 110px 8px;
+                align-items: flex-start; /* mobile: konten mulai dari atas */
+            }
+            .container { max-width: 100%; }
+
+            /* Semua window menjadi full width */
+            .window[style*="width"] {
+                width: 100% !important;
+            }
+
+            /* Field rows jadi vertikal */
+            .field-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 3px !important;
+            }
+            .field-row label {
+                width: auto !important;
+                min-width: unset !important;
+            }
+            .field-row input[type="text"],
+            .field-row input[type="password"],
+            .field-row input[type="number"],
+            .field-row select,
+            .field-row textarea {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Form buttons full width on mobile */
+            .field-row input[type="file"] {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Taskbar lebih compact */
+            .start-btn {
+                font-size: 14px;
+                padding: 0 12px;
+            }
+            .nav-item {
+                font-size: 11px;
+                padding: 4px 7px;
+            }
+
+            /* Title bar text truncate */
+            .title-bar-text {
+                font-size: 11px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: calc(100vw - 100px);
+            }
         }
     </style>
 </head>
@@ -98,12 +162,17 @@
 <div class="taskbar">
     <button class="start-btn"><i>start</i></button>
     <div class="nav-links">
-        <a href="/" class="nav-item">🌍 Peta Lokasi</a>
-        <a href="/register" class="nav-item">📝 Daftar</a>
-        <a href="/login" class="nav-item">🔑 Login</a>
-        <a href="/pesan" class="nav-item">🖨️ Pesan Cetakan</a>
+        {% if session.get('user_id') %}
+            <a href="/" class="nav-item">🌍 Peta</a>
+            <a href="/pesan" class="nav-item">🖨️ Pesan</a>
+            <a href="/riwayat" class="nav-item">📦 Riwayat</a>
+            <a href="/profil" class="nav-item">👤 Profil</a>
+            <a href="/logout" class="nav-item" style="background-color: #dc2626; border-color: #991b1b;">🚪 Logout</a>
+        {% else %}
+            <a href="/login" class="nav-item">🔑 Login</a>
+            <a href="/register" class="nav-item">📝 Daftar</a>
+        {% endif %}
         <a href="/admin" class="nav-item" style="background-color: #d97706; border-color: #92400e;">⚙️ Admin</a>
-        <a href="/logout" class="nav-item" style="background-color: #dc2626; border-color: #991b1b;">🚪 Logout</a>
     </div>
 </div>
 

@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}Pesan Cetakan - Kembar Joyo{% endblock %}
 
 {% block content %}
@@ -47,13 +46,36 @@
                 
                 <div class="field-row" style="margin-bottom: 8px;">
                     <label style="width: 130px; display: inline-block;">Jenis Jilid:</label>
-                    <select name="jilid" style="width: 150px;">
+                    <select name="jilid" id="select-jilid" style="width: 150px;" onchange="toggleWarnaJilid(this)">
                         <option value="Tanpa Jilid">Tanpa Jilid</option>
-                        <option value="Lakban">Jilid Lakban</option>
-                        <option value="Spiral">Jilid Spiral</option>
+                        <option value="Lakban">Jilid Lakban +Rp7.000</option>
+                        <option value="Spiral">Jilid Spiral +Rp15.000</option>
+                    </select>
+                </div>
+
+                <!-- Pilihan warna jilid belakang, tampil hanya saat Lakban dipilih -->
+                <div class="field-row" id="row-warna-jilid" style="display: none; margin-bottom: 8px;">
+                    <label style="width: 130px; display: inline-block;">🎨 Warna Cover:</label>
+                    <select name="warna_jilid" id="select-warna-jilid" style="width: 150px;">
+                        <option value="Hitam">Hitam</option>
+                        <option value="Putih">Putih</option>
+                        <option value="Merah">Merah</option>
+                        <option value="Biru">Biru</option>
+                        <option value="Hijau">Hijau</option>
+                        <option value="Kuning">Kuning</option>
+                        <option value="Ungu">Ungu</option>
+                        <option value="Orange">Orange</option>
+                        <option value="Coklat">Coklat</option>
+                        <option value="Abu-abu">Abu-abu</option>
                     </select>
                 </div>
                 
+                <div class="field-row" style="margin-bottom: 8px;">
+                    <label style="width: 130px; display: inline-block;">Jumlah Halaman:</label>
+                    <input type="number" name="jumlah_halaman" id="input-halaman" min="1" placeholder="Otomatis jika PDF" style="width: 150px;">
+                    <small style="color: #666; font-size: 11px; margin-left: 5px;">(Kosongkan jika PDF otomatis)</small>
+                </div>
+
                 <div class="field-row" style="margin-bottom: 8px;">
                     <label style="width: 130px; display: inline-block;">Jumlah Rangkap:</label>
                     <input type="number" name="jumlah" value="1" min="1" required style="width: 50px;">
@@ -68,12 +90,20 @@
             
             <fieldset style="margin-bottom: 15px;">
                 <legend>Pengiriman</legend>
-                <div class="field-row">
+                <div class="field-row" style="margin-bottom: 8px;">
                     <label style="width: 130px; display: inline-block;">Metode:</label>
-                    <select name="penerimaan" style="width: 200px;">
+                    <select name="penerimaan" id="select-penerimaan" style="width: 220px;" onchange="toggleAlamat(this)">
                         <option value="Ambil Sendiri di Toko">Ambil Sendiri di Toko</option>
-                        <option value="Diantar ke Alamat">Diantar ke Alamat (Area Palu)</option>
+                        <option value="Diantar ke Alamat">Diantar ke Alamat (Seluruh Kota Palu) +Rp10.000</option>
                     </select>
+                </div>
+
+                <!-- Input alamat tujuan, tampil hanya jika pilih Diantar -->
+                <div class="field-row" id="row-alamat" style="display: none; margin-top: 8px;">
+                    <label style="width: 130px; display: inline-block; vertical-align: top;">📍 Alamat Tujuan:</label>
+                    <textarea name="alamat_tujuan" id="input-alamat" rows="3"
+                              style="width: 220px; font-family: Tahoma;"
+                              placeholder="Contoh: Jl. Sudirman No.10, Palu Selatan..."></textarea>
                 </div>
             </fieldset>
 
@@ -83,4 +113,28 @@
         </form>
     </div>
 </div>
+
+<script>
+function toggleAlamat(select) {
+    var rowAlamat = document.getElementById('row-alamat');
+    var inputAlamat = document.getElementById('input-alamat');
+    if (select.value === 'Diantar ke Alamat') {
+        rowAlamat.style.display = 'flex';
+        inputAlamat.required = true;
+    } else {
+        rowAlamat.style.display = 'none';
+        inputAlamat.required = false;
+        inputAlamat.value = '';
+    }
+}
+
+function toggleWarnaJilid(select) {
+    var rowWarna = document.getElementById('row-warna-jilid');
+    if (select.value === 'Lakban') {
+        rowWarna.style.display = 'flex';
+    } else {
+        rowWarna.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

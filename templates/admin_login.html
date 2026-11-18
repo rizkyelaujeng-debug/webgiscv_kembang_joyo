@@ -1,8 +1,8 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Login Admin - Kembar Joyo{% endblock %}
 
 {% block content %}
-<div class="window" style="width: 350px; margin: 0 auto;">
+<div class="window" style="width: 100%; max-width: 350px; margin: 0 auto;">
     <div class="title-bar">
         <div class="title-bar-text"><span style="margin-right: 5px;">⚙️</span> Administrator System</div>
         <div class="title-bar-controls">
@@ -17,11 +17,11 @@
         <form action="/admin_login" method="POST">
             <div class="field-row" style="margin-bottom: 10px;">
                 <label style="width: 90px;">Username:</label>
-                <input type="text" name="username" required style="width: 180px;">
+                <input type="text" name="username" required style="flex: 1; min-width: 0;">
             </div>
             <div class="field-row" style="margin-bottom: 15px;">
                 <label style="width: 90px;">Password:</label>
-                <input type="password" name="password" required style="width: 180px;">
+                <input type="password" name="password" required style="flex: 1; min-width: 0;">
             </div>
             <div style="text-align: right; border-top: 1px solid #ccc; padding-top: 10px;">
                 <button type="submit" style="width: 90px; font-weight: bold;">Login Admin</button>

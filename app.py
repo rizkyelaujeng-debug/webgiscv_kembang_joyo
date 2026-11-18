@@ -1,4 +1,27 @@
+import re
+
+def hitung_halaman_pdf(file_path):
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(file_path)
+        return len(reader.pages)
+    except Exception:
+        pass
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        counts = re.findall(rb'/Count\s+(\d+)', data)
+        if counts:
+            return int(counts[0])
+        pages = re.findall(rb'/Type\s*/Page[^s]', data)
+        if pages:
+            return len(pages)
+    except Exception:
+        pass
+    return 1
+
 import os
+from urllib.parse import quote
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -14,10 +37,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
+    # Jika belum login, arahkan ke halaman login
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM lokasi_fotocopy")
+        cursor.execute("SELECT id_lokasi, nama_tempat, alamat, latitude, longitude, foto_tempat, jam_buka, layanan FROM lokasi_fotocopy")
         data_lokasi = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -65,31 +91,9 @@ def login():
             session['user_id'] = user['id_pelanggan']
             session['nama_lengkap'] = user['nama_lengkap']
             
-            return f"""
-            <!DOCTYPE html>
-            <html lang="id">
-            <head>
-                <link rel="stylesheet" href="https://unpkg.com/xp.css">
-                <style>body {{ background-color: #004e98; background-image: url('https://archive.org/download/bliss-600dpi/bliss-600dpi.jpg'); background-size: cover; font-family: Tahoma; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}</style>
-            </head>
-            <body>
-                <div class="window" style="width: 320px;">
-                    <div class="title-bar">
-                        <div class="title-bar-text">Informasi Sistem</div>
-                        <div class="title-bar-controls"><button aria-label="Close"></button></div>
-                    </div>
-                    <div class="window-body" style="text-align: center; padding: 15px;">
-                        <span style="font-size: 32px; display: block; margin-bottom: 10px;">🎉</span>
-                        <p>Login Berhasil!<br>Selamat datang, <b>{user['nama_lengkap']}</b>.</p>
-                        <br>
-                        <a href="/pesan"><button style="width: 80px;">OK</button></a>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
+            return render_template('login_sukses.html', nama=user['nama_lengkap'])
         else:
-            return "<script>alert('Gagal! Nomor HP atau Kata Sandi salah.'); window.history.back();</script>"
+            return render_template('login.html', error='Nomor HP atau Kata Sandi salah.')
             
     return render_template('login.html')
 
@@ -120,6 +124,8 @@ def kalkulasi():
         jumlah = int(request.form['jumlah'])
         penerimaan = request.form['penerimaan']
         catatan = request.form.get('catatan', '') 
+        warna_jilid = request.form.get('warna_jilid', '').strip()
+        alamat_tujuan = request.form.get('alamat_tujuan', '').strip()
         
         dokumen = request.files.get('dokumen')
         if dokumen and dokumen.filename != '':
@@ -128,50 +134,52 @@ def kalkulasi():
         else:
             nama_file = "Tidak ada file"
 
-        harga_kertas = 200 if kertas == 'A4' else (300 if kertas == 'F4' else 500)
-        harga_warna = 300 if warna == 'Hitam Putih' else 1000
-        harga_jilid = 0 if jilid == 'Tanpa Jilid' else (3000 if jilid == 'Lakban' else 15000)
-        ongkir = 5000 if penerimaan == 'Diantar ke Alamat' else 0
+        # Harga cetak per halaman: HP=500, Berwarna=1000
+        harga_per_halaman = 500 if warna == 'Hitam Putih' else 1000
+        harga_jilid = 0 if jilid == 'Tanpa Jilid' else (7000 if jilid == 'Lakban' else 15000)
+        ongkir = 10000 if penerimaan == 'Diantar ke Alamat' else 0
 
-        harga_satuan = harga_kertas + harga_warna
-        subtotal_cetak = harga_satuan * jumlah
-        total_harga = subtotal_cetak + harga_jilid + ongkir
+        # Ambil input jumlah halaman manual jika diisi
+        input_halaman = request.form.get('jumlah_halaman', '').strip()
+        jumlah_halaman = 0
+        if input_halaman.isdigit():
+            jumlah_halaman = int(input_halaman)
+
+        # Jika pengguna tidak isi atau 0, deteksi otomatis dari file PDF
+        if jumlah_halaman <= 0 and dokumen and nama_file.lower().endswith('.pdf'):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], nama_file)
+            jumlah_halaman = hitung_halaman_pdf(file_path)
+
+        if jumlah_halaman <= 0:
+            jumlah_halaman = 1
+
+        # Hitung biaya cetak: harga/hal * jumlah halaman * jumlah rangkap
+        subtotal_cetak = harga_per_halaman * jumlah_halaman * jumlah
+        total_jilid = harga_jilid * jumlah
+        total_harga = subtotal_cetak + total_jilid + ongkir
         
-        spesifikasi_lengkap = f"Kertas {kertas}, {warna}, Jilid {jilid} ({jumlah} Rangkap)"
+        spesifikasi_lengkap = f"Kertas {kertas}, {warna}, {jumlah_halaman} Halaman, Jilid {jilid}"
+        if jilid == "Lakban" and warna_jilid:
+            spesifikasi_lengkap += f" (Cover {warna_jilid})"
+        spesifikasi_lengkap += f" ({jumlah} Rangkap)"
         if catatan.strip() != "":
             spesifikasi_lengkap += f" | Catatan: {catatan}"
 
-        return f"""
-        <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;">
-            <h2 style="color: #333; text-align: center;">Rincian Pesanan & Pembayaran</h2>
-            <p><strong>Nama File:</strong> {nama_file}</p>
-            <p><strong>Spesifikasi:</strong> {spesifikasi_lengkap}</p>
-            <p><strong>Penerimaan:</strong> {penerimaan}</p>
-            <hr>
-            <h3 style="color: #28a745; text-align: center;">Total Biaya: Rp {total_harga:,}</h3>
-            
-            <div style="text-align: center; background-color: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px 0; font-weight: bold; color: #d9534f;">Wajib Bayar via QRIS</p>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QRIS" style="width: 150px; margin-bottom: 10px;">
-                <p style="font-size: 13px; color: #555;">Silakan *scan* menggunakan M-Banking atau E-Wallet sebesar <b>Rp {total_harga:,}</b></p>
-            </div>
+        maps_url = ''  # tidak digunakan, dihapus
 
-            <form action="/simpan_pesanan" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="nama_file" value="{nama_file}">
-                <input type="hidden" name="spesifikasi" value="{spesifikasi_lengkap}">
-                <input type="hidden" name="penerimaan" value="{penerimaan}">
-                <input type="hidden" name="total_harga" value="{total_harga}">
-                
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Unggah Bukti Transfer (JPG/PNG):</label>
-                <input type="file" name="bukti_bayar" accept="image/png, image/jpeg" required style="width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box;">
-                
-                <button type="submit" style="width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">Selesaikan Pesanan ➡</button>
-            </form>
-            
-            <br>
-            <a href="/pesan" style="display: block; text-align: center; color: #007bff; text-decoration: none;">⬅ Batal / Edit Pesanan</a>
-        </div>
-        """
+        return render_template('kalkulasi.html',
+            nama_file=nama_file,
+            spesifikasi=spesifikasi_lengkap,
+            penerimaan=penerimaan,
+            total_harga=total_harga,
+            alamat_tujuan=alamat_tujuan,
+            jumlah_halaman=jumlah_halaman,
+            jumlah_rangkap=jumlah,
+            subtotal_cetak=subtotal_cetak,
+            total_jilid=total_jilid,
+            ongkir=ongkir,
+            harga_per_halaman=harga_per_halaman
+        )
 
 @app.route('/simpan_pesanan', methods=['POST'])
 def simpan_pesanan():
@@ -184,6 +192,7 @@ def simpan_pesanan():
         spesifikasi = request.form['spesifikasi']
         penerimaan = request.form['penerimaan']
         total_harga = request.form['total_harga']
+        alamat_tujuan = request.form.get('alamat_tujuan', '')
         
         bukti_bayar = request.files.get('bukti_bayar')
         if bukti_bayar and bukti_bayar.filename != '':
@@ -201,24 +210,112 @@ def simpan_pesanan():
             cursor = conn.cursor()
             
             query = """
-            INSERT INTO pesanan (id_pelanggan, nama_file, spesifikasi, metode_penerimaan, bukti_bayar, total_harga, status_pesanan, tanggal_pesan) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            INSERT INTO pesanan (id_pelanggan, nama_file, spesifikasi, metode_penerimaan, alamat_tujuan, bukti_bayar, total_harga, status_pesanan, tanggal_pesan) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """
-            cursor.execute(query, (id_pelanggan, nama_file, spesifikasi, penerimaan, nama_bukti, total_harga, status))
+            cursor.execute(query, (id_pelanggan, nama_file, spesifikasi, penerimaan, alamat_tujuan, nama_bukti, total_harga, status))
             conn.commit()
             
-            return f"""
-            <div style="font-family: Tahoma, sans-serif; max-width: 500px; margin: 50px auto; text-align: center; padding: 30px; border: 1px solid #ccc; border-radius: 10px; background-color: #d4edda;">
-                <h1 style="color: #155724;">✅ Pesanan Berhasil Dibuat!</h1>
-                <p style="color: #155724; font-size: 16px;">Terima kasih <b>{session['nama_lengkap']}</b>. Pesanan Anda telah masuk ke sistem.</p>
-                <a href="/" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">⬅ Kembali ke Halaman Utama</a>
-            </div>
-            """
+            wa_pesan = (
+                "Halo kak! Saya ingin mengkonfirmasi pesanan saya di CV. Kembar Joyo " + "\n\n" +
+                " Detail Pesanan:\n" +
+                " Nama File: " + nama_file + "\n" +
+                " Spesifikasi: " + spesifikasi + "\n" +
+                " Penerimaan: " + penerimaan + "\n" +
+                " Total: Rp {:,}".format(int(float(total_harga))) + "\n\n" +
+                "Bukti transfer sudah saya kirimkan. Mohon segera diproses ya kak " + "\n" +
+                "Terima kasih! "
+            )
+            wa_url = "https://wa.me/6282321065677?text=" + quote(wa_pesan)
+            return render_template('sukses_pesanan.html',
+                nama_pelanggan=session['nama_lengkap'],
+                nama_file=nama_file,
+                spesifikasi=spesifikasi,
+                penerimaan=penerimaan,
+                alamat_tujuan=alamat_tujuan,
+                total_harga=int(float(total_harga)),
+                wa_url=wa_url
+            )
         except Exception as e:
             return f"<h1>Terjadi kesalahan database: {e}</h1>"
         finally:
             if 'cursor' in locals(): cursor.close()
             if 'conn' in locals(): conn.close()
+
+@app.route('/riwayat')
+def riwayat():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM pesanan WHERE id_pelanggan = %s ORDER BY id_pesanan DESC",
+            (session['user_id'],)
+        )
+        pesanan_list = cursor.fetchall()
+        return render_template('riwayat.html', pesanan=pesanan_list)
+    except Exception as e:
+        return f"<h1>Error: {e}</h1>"
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+@app.route('/profil', methods=['GET', 'POST'])
+def profil():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    pesan_sukses = None
+    pesan_error  = None
+    if request.method == 'POST':
+        nama_baru     = request.form.get('nama_lengkap', '').strip()
+        nohp_baru     = request.form.get('no_hp', '').strip()
+        sandi_baru    = request.form.get('password_baru', '').strip()
+        sandi_konfirm = request.form.get('password_konfirmasi', '').strip()
+        if not nama_baru or not nohp_baru:
+            pesan_error = 'Nama dan Nomor HP tidak boleh kosong.'
+        elif sandi_baru and sandi_baru != sandi_konfirm:
+            pesan_error = 'Konfirmasi kata sandi tidak cocok.'
+        elif sandi_baru and len(sandi_baru) < 6:
+            pesan_error = 'Kata sandi minimal 6 karakter.'
+        else:
+            try:
+                conn2 = get_db_connection()
+                cur2  = conn2.cursor()
+                if sandi_baru:
+                    sandi_hash = generate_password_hash(sandi_baru)
+                    cur2.execute(
+                        "UPDATE pelanggan SET nama_lengkap=%s, no_hp=%s, password=%s WHERE id_pelanggan=%s",
+                        (nama_baru, nohp_baru, sandi_hash, session['user_id'])
+                    )
+                else:
+                    cur2.execute(
+                        "UPDATE pelanggan SET nama_lengkap=%s, no_hp=%s WHERE id_pelanggan=%s",
+                        (nama_baru, nohp_baru, session['user_id'])
+                    )
+                conn2.commit()
+                session['nama_lengkap'] = nama_baru
+                pesan_sukses = 'Profil berhasil diperbarui!'
+            except Exception as e:
+                pesan_error = f'Terjadi kesalahan: {e}'
+            finally:
+                if 'cur2' in locals(): cur2.close()
+                if 'conn2' in locals(): conn2.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pelanggan WHERE id_pelanggan = %s", (session['user_id'],))
+        data_profil = cursor.fetchone()
+        return render_template('profil.html',
+            profil=data_profil,
+            pesan_sukses=pesan_sukses,
+            pesan_error=pesan_error
+        )
+    except Exception as e:
+        return f"<h1>Error: {e}</h1>"
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
 
 # ==========================================
 # AREA KHUSUS ADMIN (DILINDUNGI SESSION)
@@ -253,7 +350,12 @@ def admin():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM pesanan ORDER BY id_pesanan DESC")
+        cursor.execute("""
+            SELECT p.*, pl.nama_lengkap, pl.no_hp
+            FROM pesanan p
+            LEFT JOIN pelanggan pl ON p.id_pelanggan = pl.id_pelanggan
+            ORDER BY p.id_pesanan DESC
+        """)
         data_pesanan = cursor.fetchall()
         return render_template('admin.html', pesanan=data_pesanan)
     except Exception as e:
@@ -277,6 +379,38 @@ def update_status(id_pesanan):
         return redirect(url_for('admin'))
     except Exception as e:
         return f"Gagal update status: {e}"
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+
+@app.route('/hapus_pesanan/<int:id_pesanan>', methods=['POST'])
+def hapus_pesanan(id_pesanan):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Ambil nama file dulu sebelum dihapus
+        cursor.execute(
+            "SELECT nama_file, bukti_bayar FROM pesanan WHERE id_pesanan = %s",
+            (id_pesanan,)
+        )
+        row = cursor.fetchone()
+        if row:
+            # Hapus file dokumen
+            for col in ['nama_file', 'bukti_bayar']:
+                fname = row[col]
+                if fname and fname not in ('Tidak ada file', 'Tidak ada bukti'):
+                    fpath = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+                    if os.path.exists(fpath):
+                        os.remove(fpath)
+            # Hapus record dari database
+            cursor.execute("DELETE FROM pesanan WHERE id_pesanan = %s", (id_pesanan,))
+            conn.commit()
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"Gagal menghapus pesanan: {e}"
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()

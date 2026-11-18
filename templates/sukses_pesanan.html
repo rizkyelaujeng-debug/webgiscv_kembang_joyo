@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Pesanan Berhasil - Kembar Joyo{% endblock %}
+
+{% block content %}
+<div class="window" style="max-width: 440px; width: 100%; margin: 0 auto;">
+    <div class="title-bar">
+        <div class="title-bar-text">
+            <span style="margin-right: 5px;">✅</span> Konfirmasi Pesanan
+        </div>
+        <div class="title-bar-controls">
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div class="window-body" style="padding: 15px;">
+
+        <!-- Sukses banner -->
+        <div style="text-align: center; margin-bottom: 15px;">
+            <span style="font-size: 48px; display: block; margin-bottom: 8px;">🎉</span>
+            <h2 style="margin: 0 0 5px 0; color: #155724;">Pesanan Berhasil Dibuat!</h2>
+            <p style="margin: 0; color: #555; font-size: 13px;">
+                Terima kasih, <strong>{{ nama_pelanggan }}</strong>!<br>
+                Pesanan Anda sudah masuk dan sedang menunggu diproses.
+            </p>
+        </div>
+
+        <!-- Ringkasan pesanan -->
+        <fieldset style="margin-bottom: 12px;">
+            <legend>📋 Ringkasan Pesanan</legend>
+            <div class="field-row" style="margin-bottom: 5px; flex-wrap: wrap;">
+                <label style="width: 100px; min-width: 100px;">Nama File:</label>
+                <span>{{ nama_file }}</span>
+            </div>
+            <div class="field-row" style="margin-bottom: 5px; flex-wrap: wrap;">
+                <label style="width: 100px; min-width: 100px;">Spesifikasi:</label>
+                <span>{{ spesifikasi }}</span>
+            </div>
+            <div class="field-row" style="margin-bottom: 5px; flex-wrap: wrap;">
+                <label style="width: 100px; min-width: 100px;">Penerimaan:</label>
+                <span>{{ penerimaan }}</span>
+            </div>
+            {% if alamat_tujuan %}
+            <div class="field-row" style="margin-bottom: 5px; flex-wrap: wrap;">
+                <label style="width: 100px; min-width: 100px;">📍 Alamat:</label>
+                <span>{{ alamat_tujuan }}</span>
+            </div>
+            {% endif %}
+            <div class="field-row" style="flex-wrap: wrap;">
+                <label style="width: 100px; min-width: 100px;">Total:</label>
+                <strong style="color: #155724;">Rp {{ "{:,}".format(total_harga|int) }}</strong>
+            </div>
+        </fieldset>
+
+        <!-- Hubungi via WhatsApp -->
+        <fieldset style="margin-bottom: 12px; border-color: #25D366;">
+            <legend>📱 Konfirmasi via WhatsApp</legend>
+            <div style="padding: 8px;">
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #333;">
+                    Kirim pesan ke admin untuk konfirmasi pesanan dan bukti transfer Anda:
+                </p>
+                <a href="{{ wa_url }}" target="_blank"
+                   style="display: flex; align-items: center; justify-content: center; gap: 8px;
+                          background-color: #25D366; color: white; text-decoration: none;
+                          padding: 10px; font-weight: bold; font-size: 14px;
+                          border: 2px outset #128C7E; font-family: Tahoma, sans-serif;">
+                    💬 Hubungi Admin via WhatsApp
+                </a>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #888; text-align: center;">
+                    Nomor: 0823-2106-5677
+                </p>
+            </div>
+        </fieldset>
+
+        <!-- Tombol navigasi -->
+        <div style="border-top: 1px solid #ccc; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <a href="/riwayat" style="font-size: 12px; color: #000080; text-decoration: underline;">
+                📦 Lihat Riwayat Pesanan
+            </a>
+            <div style="display: flex; gap: 6px;">
+                <a href="/pesan"><button>🖨️ Pesan Lagi</button></a>
+                <a href="/"><button style="font-weight: bold;">🌍 Ke Peta</button></a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

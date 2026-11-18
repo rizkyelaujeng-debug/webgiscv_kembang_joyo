@@ -1,57 +1,128 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard - CV. Kembar Joyo</title>
-    <!-- Library XP.css untuk menyulap web menjadi Windows XP -->
-    <link rel="stylesheet" href="https://unpkg.com/xp.css">
-    <style>
-        body {
-            /* Wallpaper legendaris Windows XP (Bliss) */
-            background-image: url('https://upload.wikimedia.org/wikipedia/en/1/17/Bliss_%28Windows_XP%29.png');
-            background-size: cover;
-            background-attachment: fixed;
-            font-family: Tahoma, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 90vh;
-        }
-        .admin-container {
-            width: 100%;
-            max-width: 900px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: white;
-            font-family: Tahoma, sans-serif;
-        }
-        th, td {
-            border: 1px solid #c0c0c0;
-            padding: 6px;
-            font-size: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #ece9d8; /* Warna khas header XP */
-            font-weight: normal;
-            border-bottom: 2px solid #999;
-        }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}Control Panel Admin - CV. Kembar Joyo{% endblock %}
 
-<div class="admin-container">
-    <!-- Jendela ala Windows XP -->
+{% block content %}
+<style>
+    /* Override container base.html agar admin bisa full lebar */
+    .container {
+        max-width: 98vw !important;
+        width: 98vw !important;
+        padding: 0 !important;
+    }
+    body {
+        align-items: flex-start !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    .admin-window {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        font-family: Tahoma, sans-serif;
+        table-layout: fixed;
+    }
+    th, td {
+        border: 1px solid #c0c0c0;
+        padding: 4px 5px;
+        font-size: 11px;
+        text-align: left;
+        vertical-align: top;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    th {
+        background-color: #ece9d8;
+        font-weight: bold;
+        border-bottom: 2px solid #999;
+        white-space: nowrap;
+    }
+    tr:nth-child(even) { background-color: #f9f9f6; }
+    tr:hover { background-color: #e8f0fe; }
+    .badge-menunggu { color: #cc0000; font-weight: bold; }
+    .badge-dicetak  { color: #b8860b; font-weight: bold; }
+    .badge-diantar  { color: #0055cc; font-weight: bold; }
+    .badge-selesai  { color: #006600; font-weight: bold; }
+    #btn-update {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        background-color: #0055cc;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border: 2px outset #003399;
+        font-family: Tahoma, sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .btn-update-row {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        background-color: #0055cc !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border: 2px outset #003399 !important;
+        font-family: Tahoma, sans-serif;
+        cursor: pointer;
+    }
+    .btn-hapus-row {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        background-color: #cc0000 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border: 2px outset #880000 !important;
+        font-family: Tahoma, sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        margin-top: 4px;
+    }
+    .btn-hapus-row:hover {
+        background-color: #aa0000 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        text-decoration: none;
+    }
+    #link-logout-admin {
+        color: #cc0000 !important;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 12px;
+    }
+    #link-logout-admin:hover { text-decoration: underline; }
+
+    /* Sembunyikan scroll horizontal sunken panel */
+    .sunken-panel { overflow-x: hidden !important; }
+
+    /* Modal Konfirmasi XP-style */
+    #modal-hapus {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    #modal-hapus.show { display: flex; }
+    #modal-inner {
+        width: 360px;
+        font-family: Tahoma, sans-serif;
+    }
+</style>
+
+<div class="admin-window">
     <div class="window">
-        <!-- Title Bar Biru Khas XP -->
         <div class="title-bar">
             <div class="title-bar-text">
-                <img src="https://win98icons.alexmeub.com/icons/png/computer_explorer-4.png" alt="icon" style="height: 16px; vertical-align: middle; margin-right: 5px;">
-                Control Panel Admin - CV. Kembar Joyo
+                <span style="margin-right:5px;">⚙️</span> Control Panel Admin - CV. Kembar Joyo
             </div>
             <div class="title-bar-controls">
                 <button aria-label="Minimize"></button>
@@ -59,80 +130,205 @@
                 <button aria-label="Close"></button>
             </div>
         </div>
-        
-        <!-- Isi Jendela -->
+
         <div class="window-body">
+            <!-- Tab nav -->
             <menu role="tablist">
-                <li role="tab" aria-selected="true"><a href="#tabs">Pesanan Masuk</a></li>
-                <li role="tab"><a href="/">⬅ Kembali ke Web Utama</a></li>
-                <li role="tab" style="margin-left: auto;"><a href="/admin_logout" style="color: red; font-weight: bold;">🚪 Logout Admin</a></li>
+                <li role="tab" aria-selected="true"><a href="#tab-pesanan">📋 Pesanan Masuk</a></li>
+                <li role="tab"><a href="/">⬅ Web Utama</a></li>
+                <li role="tab" style="margin-left:auto;">
+                    <a href="/admin_logout" id="link-logout-admin">🚪 Logout Admin</a>
+                </li>
             </menu>
-            
-            <article role="tabpanel" id="tabs">
-                <p>Selamat datang, Administrator. Berikut adalah daftar pesanan dokumen dari pelanggan:</p>
-                
-                <!-- Kotak Tabel bergaya "Sunken" (Tenggelam ke dalam) -->
-                <div class="sunken-panel" style="height: 350px; overflow-y: scroll;">
+
+            <article role="tabpanel" id="tab-pesanan">
+                <p style="margin: 6px 0 8px 0; font-size: 12px;">
+                    Selamat datang, <strong>Administrator</strong>. Berikut daftar pesanan dari pelanggan:
+                </p>
+
+                <div class="sunken-panel" style="height: 420px; overflow-y: scroll;">
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Tanggal</th>
-                                <th>Nama File</th>
-                                <th>Spesifikasi & Pengiriman</th>
-                                <th>Total Biaya</th>
-                                <th>Status</th>
-                                <th>Aksi Ubah Status</th>
+                                <th style="width:28px;">ID</th>
+                                <th style="width:80px;">Tanggal</th>
+                                <th style="width:100px;">Pelanggan</th>
+                                <th>Dokumen &amp; Bukti</th>
+                                <th>Spesifikasi</th>
+                                <th style="width:60px;">Total</th>
+                                <th style="width:72px;">Status</th>
+                                <th style="width:105px;">Ubah Status</th>
+                                <th style="width:50px;">Hapus</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for p in pesanan %}
                             <tr>
-                                <td>#{{ p.id_pesanan }}</td>
+                                <td style="font-weight:bold;">#{{ p.id_pesanan }}</td>
                                 <td>{{ p.tanggal_pesan }}</td>
                                 <td>
-                                    <!-- Link untuk melihat/mengunduh dokumen -->
-                                    <a href="{{ url_for('static', filename='uploads/' + p.nama_file) }}" target="_blank" style="color: blue; text-decoration: underline;">
-                                        <strong>📂 {{ p.nama_file }}</strong>
-                                    </a>
-                                    <br>
-                                    <!-- Link untuk melihat bukti transfer -->
-                                    <a href="{{ url_for('static', filename='uploads/' + p.bukti_bayar) }}" target="_blank" style="font-size: 10px; color: green; text-decoration: none;">
-                                        Lihat Bukti Bayar 💸
-                                    </a>
+                                    <span style="font-weight:bold; color:#333;">{{ p.nama_lengkap or '-' }}</span><br>
+                                    <span style="color:#666; font-size:10px;">{{ p.no_hp or '' }}</span>
                                 </td>
-                                <td>{{ p.spesifikasi }} <br> <span style="color: blue;">[{{ p.metode_penerimaan }}]</span></td>
-                                <td>Rp {{ "{:,}".format(p.total_harga) }}</td>
-                                
-                                <!-- Warna Status Dinamis -->
-                                <td style="font-weight: bold; color: {% if p.status_pesanan == 'Menunggu Diproses' %}red{% elif p.status_pesanan == 'Selesai' %}green{% else %}#b8860b{% endif %};">
-                                    {{ p.status_pesanan }}
-                                </td>
-                                
                                 <td>
-                                    <form action="/update_status/{{ p.id_pesanan }}" method="POST" style="margin: 0; display: flex; gap: 5px;">
-                                        <select name="status_baru" style="font-family: Tahoma; font-size: 11px;">
-                                            <option value="Menunggu Diproses" {% if p.status_pesanan == 'Menunggu Diproses' %}selected{% endif %}>Menunggu</option>
-                                            <option value="Sedang Dicetak" {% if p.status_pesanan == 'Sedang Dicetak' %}selected{% endif %}>Dicetak</option>
-                                            <option value="Sedang Diantar" {% if p.status_pesanan == 'Sedang Diantar' %}selected{% endif %}>Diantar</option>
-                                            <option value="Selesai" {% if p.status_pesanan == 'Selesai' %}selected{% endif %}>Selesai</option>
+                                    <a href="{{ url_for('static', filename='uploads/' + p.nama_file) }}"
+                                       target="_blank"
+                                       style="color:#0000cc; text-decoration:underline; font-weight:bold;">
+                                        📂 {{ p.nama_file }}
+                                    </a><br>
+                                    {% if p.alamat_tujuan %}
+                                    <span style="color:#555; font-size:10px;">📍 {{ p.alamat_tujuan }}</span><br>
+                                    {% endif %}
+                                    <a href="{{ url_for('static', filename='uploads/' + p.bukti_bayar) }}"
+                                       target="_blank"
+                                       style="font-size:10px; color:green; text-decoration:none;">
+                                        💸 Lihat Bukti Bayar
+                                    </a>
+                                </td>
+                                <td>
+                                    {{ p.spesifikasi }}<br>
+                                    <span style="color:#0055cc; font-size:10px;">[{{ p.metode_penerimaan }}]</span>
+                                </td>
+                                <td style="font-weight:bold;">
+                                    Rp {{ "{:,}".format(p.total_harga) }}
+                                </td>
+                                <td>
+                                    <span class="
+                                        {% if p.status_pesanan == 'Menunggu Diproses' %}badge-menunggu
+                                        {% elif p.status_pesanan == 'Sedang Dicetak' %}badge-dicetak
+                                        {% elif p.status_pesanan == 'Sedang Diantar' %}badge-diantar
+                                        {% elif p.status_pesanan == 'Selesai' %}badge-selesai
+                                        {% endif %}">
+                                        {{ p.status_pesanan }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <form action="/update_status/{{ p.id_pesanan }}" method="POST"
+                                          style="margin:0; display:flex; gap:4px; align-items:center;">
+                                        <select name="status_baru"
+                                                style="font-family:Tahoma; font-size:11px; width:80px;">
+                                            <option value="Menunggu Diproses"
+                                                {% if p.status_pesanan == 'Menunggu Diproses' %}selected{% endif %}>
+                                                Menunggu
+                                            </option>
+                                            <option value="Sedang Dicetak"
+                                                {% if p.status_pesanan == 'Sedang Dicetak' %}selected{% endif %}>
+                                                Dicetak
+                                            </option>
+                                            <option value="Sedang Diantar"
+                                                {% if p.status_pesanan == 'Sedang Diantar' %}selected{% endif %}>
+                                                Diantar
+                                            </option>
+                                            <option value="Selesai"
+                                                {% if p.status_pesanan == 'Selesai' %}selected{% endif %}>
+                                                Selesai
+                                            </option>
                                         </select>
-                                        <button type="submit" style="font-size: 11px; padding: 2px 5px;">Update</button>
+                                        <a href="#" class="btn-update-row"
+                                           onclick="this.closest('form').submit(); return false;">
+                                            Update
+                                        </a>
                                     </form>
+                                </td>
+                                <td style="text-align:center; vertical-align:middle;">
+                                    <!-- Form hapus tersembunyi -->
+                                    <form id="form-hapus-{{ p.id_pesanan }}"
+                                          action="/hapus_pesanan/{{ p.id_pesanan }}"
+                                          method="POST" style="margin:0;">
+                                    </form>
+                                    <a href="#" class="btn-hapus-row"
+                                       onclick="konfirmasiHapus({{ p.id_pesanan }}, '{{ p.nama_file }}'); return false;">
+                                        🗑 Hapus
+                                    </a>
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 20px;">Kosong. Belum ada pesanan yang masuk ke sistem.</td>
+                                <td colspan="8" style="text-align:center; padding:20px; color:#666;">
+                                    Belum ada pesanan yang masuk ke sistem.
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+
+                <p style="font-size:11px; color:#666; margin-top:6px;">
+                    Total pesanan: <strong>{{ pesanan|length }}</strong>
+                </p>
             </article>
         </div>
     </div>
 </div>
 
-</body>
-</html>
+<!-- ===== MODAL KONFIRMASI HAPUS (Windows XP Dialog Style) ===== -->
+<div id="modal-hapus">
+    <div id="modal-inner" class="window">
+        <div class="title-bar" style="background: linear-gradient(to right, #880000, #cc2200);">
+            <div class="title-bar-text">
+                <span style="margin-right:5px;">⚠️</span> Konfirmasi Penghapusan
+            </div>
+            <div class="title-bar-controls">
+                <button aria-label="Close" onclick="tutupModal()"></button>
+            </div>
+        </div>
+        <div class="window-body" style="padding: 16px;">
+            <div style="display:flex; gap:14px; align-items:flex-start; margin-bottom:16px;">
+                <span style="font-size:36px; line-height:1;">🗑️</span>
+                <div>
+                    <p style="margin:0 0 6px 0; font-weight:bold;">Hapus pesanan ini?</p>
+                    <p style="margin:0; font-size:12px; color:#333;">
+                        File: <strong id="modal-nama-file">-</strong>
+                    </p>
+                    <p style="margin:4px 0 0 0; font-size:11px; color:#cc0000;">
+                        ⚠️ Pesanan dan semua file terkait akan dihapus permanen.<br>
+                        Tindakan ini tidak bisa dibatalkan!
+                    </p>
+                </div>
+            </div>
+            <div style="border-top:1px solid #ccc; padding-top:10px; display:flex; justify-content:flex-end; gap:8px;">
+                <button onclick="tutupModal()"
+                        style="min-width:80px; font-family:Tahoma; font-size:12px; cursor:pointer;">
+                    Batal
+                </button>
+                <a href="#" id="btn-konfirm-hapus"
+                   style="display:inline-block; min-width:80px; text-align:center;
+                          background-color:#cc0000 !important; color:#ffffff !important;
+                          -webkit-text-fill-color:#ffffff !important;
+                          border:2px outset #880000; font-family:Tahoma; font-size:12px;
+                          font-weight:bold; padding:3px 10px; cursor:pointer; text-decoration:none;"
+                   onclick="eksekusiHapus(); return false;">
+                    🗑 Ya, Hapus
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var _hapusId = null;
+
+function konfirmasiHapus(idPesanan, namaFile) {
+    _hapusId = idPesanan;
+    document.getElementById('modal-nama-file').textContent = namaFile;
+    document.getElementById('modal-hapus').classList.add('show');
+}
+
+function tutupModal() {
+    document.getElementById('modal-hapus').classList.remove('show');
+    _hapusId = null;
+}
+
+function eksekusiHapus() {
+    if (_hapusId !== null) {
+        document.getElementById('form-hapus-' + _hapusId).submit();
+    }
+}
+
+// Tutup modal jika klik di luar kotak
+document.getElementById('modal-hapus').addEventListener('click', function(e) {
+    if (e.target === this) tutupModal();
+});
+</script>
+
+{% endblock %}

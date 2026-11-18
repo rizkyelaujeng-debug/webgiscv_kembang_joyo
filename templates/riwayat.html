@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Riwayat Pesanan - Kembar Joyo{% endblock %}
+
+{% block content %}
+<div class="window" style="width: 100%; max-width: 680px; margin: 0 auto;">
+    <div class="title-bar">
+        <div class="title-bar-text">
+            <span style="margin-right: 5px;">📦</span> Riwayat Pesanan — {{ session['nama_lengkap'] }}
+        </div>
+        <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="window-body">
+
+        {% if pesanan %}
+            {% for p in pesanan %}
+            <div class="window" style="margin-bottom: 12px;">
+                <div class="title-bar" style="
+                    {% if p.status_pesanan == 'Selesai' %}background: linear-gradient(to right, #155724, #28a745);
+                    {% elif p.status_pesanan == 'Sedang Diproses' %}background: linear-gradient(to right, #0c3f7f, #1a73e8);
+                    {% elif p.status_pesanan == 'Dibatalkan' %}background: linear-gradient(to right, #7f1d1d, #dc2626);
+                    {% else %}background: linear-gradient(to right, #78350f, #d97706);{% endif %}
+                ">
+                    <div class="title-bar-text">
+                        #{{ p.id_pesanan }} — 
+                        {% if p.status_pesanan == 'Selesai' %}✅
+                        {% elif p.status_pesanan == 'Sedang Diproses' %}⏳
+                        {% elif p.status_pesanan == 'Dibatalkan' %}❌
+                        {% else %}🕐{% endif %}
+                        {{ p.status_pesanan }}
+                    </div>
+                </div>
+                <div class="window-body" style="padding: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 8px;">
+                        <div>
+                            <span style="color: #555; font-size: 11px;">TANGGAL</span><br>
+                            <strong>{{ p.tanggal_pesan.strftime('%d %b %Y, %H:%M') if p.tanggal_pesan else '-' }}</strong>
+                        </div>
+                        <div>
+                            <span style="color: #555; font-size: 11px;">NAMA FILE</span><br>
+                            <strong>{{ p.nama_file }}</strong>
+                        </div>
+                        <div>
+                            <span style="color: #555; font-size: 11px;">TOTAL</span><br>
+                            <strong style="color: #155724;">Rp {{ "{:,}".format(p.total_harga) }}</strong>
+                        </div>
+                    </div>
+
+                    <fieldset style="margin-bottom: 0;">
+                        <legend>Detail</legend>
+                        <div class="field-row" style="margin-bottom: 4px; flex-wrap: wrap;">
+                            <label style="width: 110px; min-width: 110px;">Spesifikasi:</label>
+                            <span>{{ p.spesifikasi }}</span>
+                        </div>
+                        <div class="field-row" style="margin-bottom: 4px; flex-wrap: wrap;">
+                            <label style="width: 110px; min-width: 110px;">Penerimaan:</label>
+                            <span>{{ p.metode_penerimaan }}</span>
+                        </div>
+                        {% if p.alamat_tujuan %}
+                        <div class="field-row" style="flex-wrap: wrap;">
+                            <label style="width: 110px; min-width: 110px;">📍 Alamat:</label>
+                            <span>{{ p.alamat_tujuan }}</span>
+                        </div>
+                        {% endif %}
+                    </fieldset>
+                </div>
+            </div>
+            {% endfor %}
+
+        {% else %}
+            <div style="text-align: center; padding: 30px;">
+                <span style="font-size: 48px; display: block; margin-bottom: 10px;">📭</span>
+                <p>Anda belum memiliki riwayat pesanan.</p>
+                <a href="/pesan"><button style="font-weight: bold;">🖨️ Buat Pesanan Pertama</button></a>
+            </div>
+        {% endif %}
+
+        <div style="border-top: 1px solid #ccc; padding-top: 10px; text-align: right;">
+            <a href="/pesan"><button>🖨️ Pesan Lagi</button></a>
+        </div>
+    </div>
+</div>
+{% endblock %}

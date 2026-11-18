@@ -2,9 +2,66 @@
 {% block title %}Peta Mitra - Kembar Joyo{% endblock %}
 
 {% block content %}
-<div class="window" style="width: 100%; max-width: 800px; margin: 0 auto;">
+<style>
+    /* Override container agar peta bisa lebih lebar */
+    .container { max-width: 92vw !important; width: 92vw !important; }
+
+    .leaflet-popup-content {
+        font-family: Tahoma, sans-serif;
+        font-size: 12px;
+        min-width: 200px;
+        max-width: 240px;
+    }
+    .popup-foto {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border: 1px solid #ccc;
+        margin-bottom: 6px;
+        display: block;
+    }
+    .popup-no-foto {
+        width: 100%;
+        height: 80px;
+        background: #ece9d8;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 6px;
+        color: #888;
+        font-size: 11px;
+    }
+    .popup-nama {
+        font-weight: bold;
+        color: #000080;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+    .popup-row {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 2px;
+        align-items: flex-start;
+    }
+    .popup-label { color: #555; white-space: nowrap; }
+    .popup-val   { color: #222; }
+    .popup-kembar {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 2px;
+        padding: 2px 5px;
+        font-size: 10px;
+        color: #856404;
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: inline-block;
+    }
+</style>
+
+<div class="window" style="width: 100%; max-width: 100%; margin: 0 auto;">
     <div class="title-bar">
-        <div class="title-bar-text"><span style="margin-right: 5px;">🌍</span> Peta Lokasi Mitra Fotokopi</div>
+        <div class="title-bar-text"><span style="margin-right:5px;">🌍</span> Peta Lokasi Mitra Fotokopi - Palu</div>
         <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
             <button aria-label="Maximize"></button>
@@ -12,32 +69,84 @@
         </div>
     </div>
     <div class="window-body">
-        <p>Menampilkan lokasi mitra fotokopi CV. Kembar Joyo di sekitar Universitas Tadulako (Palu).</p>
-        
-        <!-- Kotak Sunken untuk Peta -->
+        <p style="font-size:12px; margin:4px 0 8px 0;">
+            Menampilkan <strong>{{ lokasi|length }}</strong> titik lokasi mitra fotokopi CV. Kembar Joyo di sekitar Universitas Tadulako, Palu.
+            Klik marker untuk melihat detail.
+        </p>
+
         <div class="sunken-panel" style="padding: 2px;">
-            <!-- Library Leaflet untuk WebGIS -->
             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-            
-            <div id="map" style="height: 400px; width: 100%;"></div>
-            
+
+            <div id="map" style="height: 500px; width: 100%;"></div>
+
             <script>
-                // Koordinat awal (Pusat Kota Palu / Untad)
-                var map = L.map('map').setView([-0.836, 119.893], 13);
-                
+                var map = L.map('map').setView([-0.860, 119.888], 14);
+
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
+                    attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+                    maxZoom: 19
                 }).addTo(map);
 
-                // Data Lokasi dari Database (Flask Jinja2)
+                // Icon khusus untuk CV. Kembar Joyo (bintang)
+                var iconStar = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
+                });
+                // Icon biasa biru
+                var iconBlue = L.icon({
+                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
+                });
+
                 {% for loc in lokasi %}
-                L.marker([{{ loc.latitude }}, {{ loc.longitude }}])
-                 .addTo(map)
-                 .bindPopup("<b>{{ loc.nama_toko }}</b><br>Alamat: {{ loc.alamat }}");
+                {% set is_kembar = (loc.id_lokasi == 1) %}
+                (function() {
+                    var nama    = {{ loc.nama_tempat | tojson }};
+                    var alamat  = {{ (loc.alamat or '-') | tojson }};
+                    var jam     = {{ (loc.jam_buka or '-') | tojson }};
+                    var layanan = {{ (loc.layanan or '-') | tojson }};
+                    var foto    = {{ (loc.foto_tempat or '') | tojson }};
+                    var lat     = {{ loc.latitude }};
+                    var lng     = {{ loc.longitude }};
+                    var isKembar = {% if is_kembar %}true{% else %}false{% endif %};
+
+                    var fotoHtml = '';
+                    if (foto) {
+                        fotoHtml = '<img src="/static/foto_lokasi/' + foto + '" class="popup-foto" onerror="this.style.display=\'none\'">';
+                    } else {
+                        fotoHtml = '<div class="popup-no-foto">📷 Belum ada foto</div>';
+                    }
+
+                    var badgeHtml = isKembar
+                        ? '<span class="popup-kembar">⭐ Lokasi Kami</span><br>'
+                        : '';
+
+                    var popupHtml =
+                        fotoHtml +
+                        badgeHtml +
+                        '<div class="popup-nama">' + nama + '</div>' +
+                        '<div class="popup-row"><span class="popup-label">📍</span><span class="popup-val">' + alamat + '</span></div>' +
+                        '<div class="popup-row"><span class="popup-label">🕐</span><span class="popup-val">' + jam + '</span></div>' +
+                        '<div class="popup-row"><span class="popup-label">🖨️</span><span class="popup-val">' + layanan + '</span></div>';
+
+                    var marker = L.marker([lat, lng], {
+                        icon: isKembar ? iconStar : iconBlue
+                    }).addTo(map);
+                    marker.bindPopup(popupHtml, { maxWidth: 250 });
+
+                    if (isKembar) marker.openPopup();
+                })();
                 {% endfor %}
             </script>
         </div>
+
+        <p style="font-size:11px; color:#666; margin-top:6px;">
+            💡 <em>Untuk menambahkan foto tiap lokasi, upload gambar ke folder
+            <strong>static/foto_lokasi/</strong> dan update kolom <code>foto_tempat</code> di database.</em>
+        </p>
     </div>
 </div>
 {% endblock %}
